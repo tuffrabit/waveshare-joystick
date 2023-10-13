@@ -62,7 +62,7 @@ class StickDeadzone:
             if lowestY < lowest:
                 lowest = lowestY
 
-            if highestY < highest:
+            if highestY > highest:
                 highest = highestY
 
             lowDiff = self.diff(32768, lowest)
