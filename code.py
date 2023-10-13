@@ -13,8 +13,6 @@ from led import Led
 from startup import Startup
 from kbMode import KbMode
 
-#print(help(board))
-
 # Key Bindings
 BUTTON_JOYSTICK_1_KEY = 1
 KEYBOARD_MODE_STICK_UP_KEY = Keycode.W
@@ -23,7 +21,7 @@ KEYBOARD_MODE_STICK_LEFT_KEY = Keycode.A
 KEYBOARD_MODE_STICK_RIGHT_KEY = Keycode.D
 
 # Configurable Values
-KEYBOARD_MODE_X_START_OFFSET = 10
+KEYBOARD_MODE_X_START_OFFSET = 100
 KEYBOARD_MODE_Y_START_OFFSET = 10
 
 # Globals
@@ -47,7 +45,7 @@ startup.setLed(led)
 
 # Create some buttons. The physical buttons are connected
 # to ground on one side and these and these pins on the other.
-button = digitalio.DigitalInOut(board.GP2)
+button = digitalio.DigitalInOut(board.GP28)
 button.direction = digitalio.Direction.INPUT
 button.pull = digitalio.Pull.UP
 
