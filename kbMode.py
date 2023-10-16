@@ -41,3 +41,6 @@ class KbMode:
             self.keyboard.press(key)
         else:
             self.keyboard.release(key)
+
+    def rangeMap(self, x, inMin, inMax, outMin, outMax):
+        return (x - inMin) * (outMax - outMin) / (inMax - inMin) + outMin
