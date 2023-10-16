@@ -39,10 +39,6 @@ class StickDeadzone:
             #65535 is full range
             xValue = analogX.value
             yValue = analogY.value
-            lowestX = 65535
-            highestX = 0
-            lowestY = 65535
-            highestY = 0
 
             if xValue > highestX:
                 highestX = xValue
@@ -56,21 +52,21 @@ class StickDeadzone:
             if yValue < lowestY:
                 lowestY = yValue
 
-            lowest = lowestX
-            highest = highestX
+        lowest = lowestX
+        highest = highestX
 
-            if lowestY < lowest:
-                lowest = lowestY
+        if lowestY < lowest:
+            lowest = lowestY
 
-            if highestY > highest:
-                highest = highestY
+        if highestY > highest:
+            highest = highestY
 
-            lowDiff = self.diff(32768, lowest)
-            highDiff = self.diff(32768, highest)
-            biggestDiff = highDiff
+        lowDiff = self.diff(32768, lowest)
+        highDiff = self.diff(32768, highest)
+        biggestDiff = highDiff
 
-            if lowDiff > biggestDiff:
-                biggestDiff = lowDiff
+        if lowDiff > biggestDiff:
+            biggestDiff = lowDiff
 
         self.deadzone = biggestDiff
         self.initBoundary()
