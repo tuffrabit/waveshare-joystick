@@ -17,16 +17,22 @@ class KbMode:
         pressedValues = [False, False, False, False]
         xStick = stickValues[0]
         yStick = stickValues[1]
-
-        if xStick > self.xStartOffset:
-            pressedValues[3] = True
-        elif xStick < (self.xStartOffset * -1):
-            pressedValues[2] = True
-
+        xStickAbs = abs(xStick)
+        yStickAbs = abs(yStick)
+        
+        if xStickAbs > self.xStartOffset:
+            extraOffset = self.rangeMap(yStickAbs, 0, 127, self.xStartOffset, 90)
+            
+            if xStickAbs > extraOffset:
+                if xStick > 0:
+                    right = True
+                elif xStick < 0:
+                    left = True
+        
         if yStick > self.yStartOffset:
-            pressedValues[0] = True
+            down = True
         elif yStick < (self.yStartOffset * -1):
-            pressedValues[1] = True
+            up = True
 
         return pressedValues
 
