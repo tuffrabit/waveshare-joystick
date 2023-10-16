@@ -25,14 +25,15 @@ class KbMode:
             
             if xStickAbs > extraOffset:
                 if xStick > 0:
-                    right = True
+                    pressedValues[3] = True
                 elif xStick < 0:
-                    left = True
+                    pressedValues[2] = True
         
-        if yStick > self.yStartOffset:
-            down = True
-        elif yStick < (self.yStartOffset * -1):
-            up = True
+        if yStickAbs > self.yStartOffset:
+            if yStickAbs > 0:
+                pressedValues[0] = True
+            elif yStickAbs < 0:
+                pressedValues[1] = True
 
         return pressedValues
 
