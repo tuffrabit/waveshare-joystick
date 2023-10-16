@@ -28,6 +28,10 @@ class StickDeadzone:
     def initDeadzone(self, analogX, analogY):
         startTime = time.monotonic()
         biggestDiff = 0
+        lowestX = 65535
+        highestX = 0
+        lowestY = 65535
+        highestY = 0
 
         # loop for 5 seconds
         while True:
