@@ -36,12 +36,3 @@ class Stick:
                 yStick = 0
 
         return [xStick, yStick]
-
-    def isInsideDeadzone(self, rawStickValue):
-        returnValue = False
-
-        if ((rawStickValue > 32768 and rawStickValue <= self.deadzone.getUpperBoundary()) or
-        (rawStickValue < 32768 and rawStickValue >= self.deadzone.getLowerBoundary())):
-            returnValue = True
-
-        return returnValue
