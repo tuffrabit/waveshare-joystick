@@ -19,21 +19,21 @@ class KbMode:
         yStick = stickValues[1]
         xStickAbs = abs(xStick)
         yStickAbs = abs(yStick)
-        
+
         if xStickAbs > self.xStartOffset:
             extraOffset = self.rangeMap(yStickAbs, 0, 127, self.xStartOffset, 90)
-            
+
             if xStickAbs > extraOffset:
                 if xStick > 0:
                     pressedValues[3] = True
                 elif xStick < 0:
                     pressedValues[2] = True
-        
+
         if yStickAbs > self.yStartOffset:
-            if yStickAbs > 0:
-                pressedValues[0] = True
-            elif yStickAbs < 0:
+            if yStick > 0:
                 pressedValues[1] = True
+            elif yStick < 0:
+                pressedValues[0] = True
 
         return pressedValues
 
