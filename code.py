@@ -15,10 +15,11 @@ from kbMode import KbMode
 
 # Key Bindings
 BUTTON_JOYSTICK_1_KEY = 1
-KEYBOARD_MODE_STICK_UP_KEY = Keycode.W
-KEYBOARD_MODE_STICK_DOWN_KEY = Keycode.S
-KEYBOARD_MODE_STICK_LEFT_KEY = Keycode.A
-KEYBOARD_MODE_STICK_RIGHT_KEY = Keycode.D
+BUTTON_JOYSTICK_KEY = Keycode.G
+KEYBOARD_MODE_STICK_UP_KEY = Keycode.UP_ARROW
+KEYBOARD_MODE_STICK_DOWN_KEY = Keycode.DOWN_ARROW
+KEYBOARD_MODE_STICK_LEFT_KEY = Keycode.LEFT_ARROW
+KEYBOARD_MODE_STICK_RIGHT_KEY = Keycode.RIGHT_ARROW
 
 # Configurable Values
 KEYBOARD_MODE_X_START_OFFSET = 45
@@ -69,8 +70,10 @@ isKeyboardMode = startup.detectStartupFlags(button)
 
 while True:
     if button.value:
+        #keyboard.release(BUTTON_JOYSTICK_KEY)
         gp.release_buttons(BUTTON_JOYSTICK_1_KEY)
     else:
+        #keyboard.press(BUTTON_JOYSTICK_KEY)
         gp.press_buttons(BUTTON_JOYSTICK_1_KEY)
 
     stickValues = stick.doStickCalculations(ax, ay, True)
