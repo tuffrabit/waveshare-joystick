@@ -1,3 +1,5 @@
+import stickCommon as sc
+
 class KbMode:
     def __init__(self):
         self.xStartOffset = None
@@ -21,7 +23,7 @@ class KbMode:
         yStickAbs = abs(yStick)
 
         if xStickAbs > self.xStartOffset:
-            extraOffset = self.rangeMap(yStickAbs, 0, 127, self.xStartOffset, 90)
+            extraOffset = sc.rangeMap(yStickAbs, 0, 127, self.xStartOffset, 90)
 
             if xStickAbs > extraOffset:
                 if xStick > 0:
@@ -42,6 +44,3 @@ class KbMode:
             self.keyboard.press(key)
         else:
             self.keyboard.release(key)
-
-    def rangeMap(self, x, inMin, inMax, outMin, outMax):
-        return (x - inMin) * (outMax - outMin) / (inMax - inMin) + outMin
