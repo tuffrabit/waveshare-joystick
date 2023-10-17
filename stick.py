@@ -22,9 +22,6 @@ class Stick:
             magnitude = sc.magnitude(x, y)
 
             if magnitude > self.deadzoneMagnitude:
-                x = sc.constrain(sc.rangeMap(xStick, sc.xLow, sc.xHigh, -1.0, 1.0), -1.0, 1.0)
-                y = sc.constrain(sc.rangeMap(yStick, sc.yLow, sc.yHigh, -1.0, 1.0), -1.0, 1.0)
-
                 factor = (magnitude - self.deadzoneMagnitude) / (1 - self.deadzoneMagnitude)
                 rawInputs = sc.normalize(magnitude, x, y)
                 mappedX = sc.rangeMap(rawInputs[0] * factor, -1.0, 1.0, -127, 127)
