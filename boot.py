@@ -1,4 +1,20 @@
 import usb_hid
+import usb_cdc
+import board
+import digitalio
+import storage
+
+# For Pi Pico
+thumbButton = digitalio.DigitalInOut(board.GP28)
+thumbButton.direction = digitalio.Direction.INPUT
+thumbButton.pull = digitalio.Pull.UP
+
+# If the switch pin is connected to ground the host OS can write to the drive, otherwise CircuitPython can
+if thumbButton.value:
+    storage.disable_usb_drive()
+    storage.remount("/", False)
+
+usb_cdc.enable(console=True, data=True)
 
 # This is only one example of a gamepad descriptor, and may not suit your needs.
 GAMEPAD_REPORT_DESCRIPTOR = bytes(
@@ -62,4 +78,4 @@ gamepad = usb_hid.Device(
 
 usb_hid.enable(
     (usb_hid.Device.KEYBOARD, usb_hid.Device.CONSUMER_CONTROL, gamepad)
-)  # Write your code here :-)
+)

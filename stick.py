@@ -4,6 +4,10 @@ import math
 class Stick:
     def __init__(self):
         self.deadzone = None
+        self.xHigh = 52535
+        self.xLow = 15000
+        self.yHigh = 52535
+        self.yLow = 15000
         self.mappedDeadzone = 0
         self.deadzoneMagnitude = 0
 
@@ -12,13 +16,25 @@ class Stick:
         self.mappedDeadzone = sc.rangeMap(deadzone.getDeadzone(), 0, 32768, 0.0, 1.0)
         self.deadzoneMagnitude = deadzone.deadzoneMagnitude
 
+    def setXHigh(self, xHigh):
+        self.xHigh = sc.getStickValue(xHigh)
+
+    def setXLow(self, xLow):
+        self.xLow = sc.getStickValue(xLow)
+
+    def setYHigh(self, yHigh):
+        self.yHigh = sc.getStickValue(yHigh)
+
+    def setYLow(self, yLow):
+        self.yLow = sc.getStickValue(yLow)
+
     def doStickCalculations(self, analogX, analogY, constrainDeadzone = False):
         xStick = analogX.value
-        yStick = 65535 - analogY.value
+        yStick = analogY.value
 
         if constrainDeadzone:
-            x = sc.constrain(sc.rangeMap(xStick, sc.xLow, sc.xHigh, -1.0, 1.0), -1.0, 1.0)
-            y = sc.constrain(sc.rangeMap(yStick, sc.yLow, sc.yHigh, -1.0, 1.0), -1.0, 1.0)
+            x = sc.constrain(sc.rangeMap(xStick, self.xLow, self.xHigh, -1.0, 1.0), -1.0, 1.0)
+            y = sc.constrain(sc.rangeMap(yStick, self.yLow, self.yHigh, -1.0, 1.0), -1.0, 1.0)
             magnitude = sc.magnitude(x, y)
 
             if magnitude > self.deadzoneMagnitude:

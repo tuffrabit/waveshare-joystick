@@ -1,10 +1,5 @@
 import math
 
-xHigh = const(46535)
-xLow = const(19000)
-yHigh = const(47535)
-yLow = const(19000)
-
 def magnitude(x, y):
     return math.sqrt(x * x + y * y)
 
@@ -21,3 +16,14 @@ def constrain(x, a, b):
 
 def rangeMap(x, inMin, inMax, outMin, outMax):
     return (x - inMin) * (outMax - outMin) / (inMax - inMin) + outMin
+
+def getStickValue(value):
+    try:
+        value = int(value)
+    except:
+        value = None
+
+    if value is not None and (value < 1 or value > 65535):
+        value = None
+
+    return value
