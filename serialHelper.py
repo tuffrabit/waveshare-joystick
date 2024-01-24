@@ -33,7 +33,10 @@ class SerialHelper:
 
             if readBytes == b'\n':
                 out = self.inBytes.decode("utf-8")
-                print(f'Serial In: {out}')
+
+                if "ping" not in out:
+                    print(f'Serial In: {out}')
+
                 self.inBytes = bytearray()
             else:
                 self.inBytes += readBytes
@@ -46,7 +49,10 @@ class SerialHelper:
     def write(self, command, data):
         if usb_cdc.data:
             serialOut = bytearray(json.dumps({command: data}) + "\r\n")
-            print("Bytes written: " + str(usb_cdc.data.write(serialOut)))
+            bytesWritten = str(usb_cdc.data.write(serialOut))
+
+            if "ping" not in serialOut:
+                print("Bytes written: " + bytesWritten)
 
     def checkForCommands(self):
         returnAction = None
@@ -61,7 +67,8 @@ class SerialHelper:
             jsonData = json.loads(serialOut)
 
             if jsonData:
-                print(f'jsonData: {jsonData}')
+                if "ping" not in serialOut:
+                    print(f'jsonData: {jsonData}')
 
                 if "getGlobalSettings" in jsonData:
                     self.handleGetGlobalSettings()
@@ -109,6 +116,8 @@ class SerialHelper:
                     self.handleSetKbModeYConeEnd(jsonData)
                 elif "readStickValues" in jsonData:
                     returnAction = self.handleReadStickValues()
+                elif "reorderProfile" in jsonData:
+                    self.handleReorderProfile(jsonData)
 
         return returnAction
 
@@ -233,6 +242,9 @@ class SerialHelper:
             if self.stick is not None:
                 self.stick.setXHigh(jsonData["setStickXHigh"])
 
+            if self.config is not None:
+                self.config.setStickXHigh(jsonData["setStickXHigh"])
+
             result = True
 
         self.write("setStickXHigh", result)
@@ -246,6 +258,9 @@ class SerialHelper:
 
             if self.stick is not None:
                 self.stick.setXLow(jsonData["setStickXLow"])
+
+            if self.config is not None:
+                self.config.setStickXLow(jsonData["setStickXLow"])
 
             result = True
 
@@ -261,6 +276,9 @@ class SerialHelper:
             if self.stick is not None:
                 self.stick.setYHigh(jsonData["setStickYHigh"])
 
+            if self.config is not None:
+                self.config.setStickYHigh(jsonData["setStickYHigh"])
+
             result = True
 
         self.write("setStickYHigh", result)
@@ -274,6 +292,9 @@ class SerialHelper:
 
             if self.stick is not None:
                 self.stick.setYLow(jsonData["setStickYLow"])
+
+            if self.config is not None:
+                self.config.setStickYLow(jsonData["setStickYLow"])
 
             result = True
 
@@ -314,6 +335,11 @@ class SerialHelper:
             result = self.config.setKbModeYConeEnd(jsonData["setKbModeYConeEnd"])
             self.kbMode.setYConeEnd(result)
             self.write("setKbModeYConeEnd", True)
-    
+
     def handleReadStickValues(self):
         return {"readStickValues": True}
+
+    def handleReorderProfile(self, jsonData):
+        if jsonData and self.config is not None and self.profileManager is not None:
+            result = self.profileManager.reorderProfile(jsonData["reorderProfile"]["profileName"], jsonData["reorderProfile"]["position"])
+            self.write("reorderProfile", result)
