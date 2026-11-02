@@ -1,10 +1,10 @@
 import stickCommon as sc
 import time
-import math
 
 class StickDeadzone:
     def __init__(self):
         self.deadzone = 0
+        self.baseDeadzone = 0
         self.upperBoundary = 0
         self.lowerBoundary = 0
         self.deadzoneBuffer = 1000
@@ -25,19 +25,34 @@ class StickDeadzone:
         return self.lowerBoundary
 
     def setDeadzoneBuffer(self, deadzoneBuffer):
-        self.deadzoneBuffer = sc.constrain(sc.rangeMap(deadzoneBuffer, 0, 32768, 0.0, 1.0), 0.0, 1.0)
+        value = sc.getStickValue(deadzoneBuffer)
+
+        if value is not None:
+            self.deadzoneBuffer = sc.constrain(sc.rangeMap(value, 0, 32768, 0.0, 1.0), 0.0, 1.0)
 
     def setXHigh(self, xHigh):
-        self.xHigh = sc.getStickValue(xHigh)
+        value = sc.getStickValue(xHigh)
+
+        if value is not None:
+            self.xHigh = value
 
     def setXLow(self, xLow):
-        self.xLow = sc.getStickValue(xLow)
+        value = sc.getStickValue(xLow)
+
+        if value is not None:
+            self.xLow = value
 
     def setYHigh(self, yHigh):
-        self.yHigh = sc.getStickValue(yHigh)
+        value = sc.getStickValue(yHigh)
+
+        if value is not None:
+            self.yHigh = value
 
     def setYLow(self, yLow):
-        self.yLow = sc.getStickValue(yLow)
+        value = sc.getStickValue(yLow)
+
+        if value is not None:
+            self.yLow = value
 
     def diff(self, x, y):
         if x > y:
@@ -102,12 +117,14 @@ class StickDeadzone:
             biggestDiff = lowDiff
 
         self.deadzone = biggestDiff
+        self.baseDeadzone = biggestDiff
         self.originalDeadzoneMagnitude = largestMagnitude
         self.initBoundary()
 
     def initBoundary(self):
-        #self.deadzone = self.deadzone + self.deadzoneBuffer
-        self.deadzone = self.deadzone + 1000
+        # Recompute from the base so repeated calls (e.g. every setDeadzone
+        # command from the app) don't keep growing the deadzone.
+        self.deadzone = self.baseDeadzone + 1000
         #self.deadzoneMagnitude = self.originalDeadzoneMagnitude + 0.2
         self.deadzoneMagnitude = self.originalDeadzoneMagnitude + self.deadzoneBuffer
         self.upperBoundary = 32768 + self.deadzone

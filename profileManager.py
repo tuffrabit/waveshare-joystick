@@ -121,6 +121,16 @@ class ProfileManager:
                 del self.config.profiles[indexToRemove]
                 success = True
 
+                # Keep the active-profile pointer consistent with the list.
+                if self.currentProfileIndex != None:
+                    if self.currentProfileIndex > indexToRemove:
+                        self.currentProfileIndex -= 1
+                    elif self.currentProfileIndex == indexToRemove:
+                        if len(self.config.profiles) == 0:
+                            self.currentProfileIndex = None
+                        elif self.currentProfileIndex >= len(self.config.profiles):
+                            self.currentProfileIndex = len(self.config.profiles) - 1
+
         return success
 
     def renameProfile(self, newProfileName, oldProfileName):
@@ -144,20 +154,44 @@ class ProfileManager:
         if not profileName or self.config is None:
             return False
 
+        try:
+            newIndex = int(newIndex)
+        except (TypeError, ValueError):
+            return False
+
         targetProfileCurrentIndex = self.getProfileIndexByName(profileName)
 
         if targetProfileCurrentIndex is None or targetProfileCurrentIndex < 0:
             return False
 
+        currentProfile = None
+
+        if self.currentProfileIndex != None and 0 <= self.currentProfileIndex < len(self.config.profiles):
+            currentProfile = self.config.profiles[self.currentProfileIndex]
+
         targetProfile = self.config.profiles[targetProfileCurrentIndex]
         self.config.profiles.pop(targetProfileCurrentIndex)
+
+        if newIndex < 0:
+            newIndex = 0
+        elif newIndex > len(self.config.profiles):
+            newIndex = len(self.config.profiles)
+
         self.config.profiles.insert(newIndex, targetProfile)
+
+        # Keep the active-profile pointer aimed at the same profile.
+        if currentProfile != None:
+            for index, profile in enumerate(self.config.profiles):
+                if profile is currentProfile:
+                    self.currentProfileIndex = index
+                    break
+
         return True
 
     def setProfileValue(self, profileName, valueName, value):
         success = False
 
-        if profileName and valueName and value is not None and self.config:
+        if profileName and valueName and value is not None and self.config and isinstance(profileName, str) and isinstance(valueName, str):
             profileToUpdate = None
             profileIndexToUpdate = None
 
@@ -216,8 +250,11 @@ class ProfileManager:
                     elif dpadName == "right":
                         profileToUpdate["dpad"]["right"] = value
                         success = True
-                elif valueName == "rgb" and len(value) == 6:
-                    rgb = tuple(int(value[i:i+2], 16) for i in (0, 2, 4))
+                elif valueName == "rgb" and isinstance(value, str) and len(value) == 6:
+                    try:
+                        rgb = tuple(int(value[i:i+2], 16) for i in (0, 2, 4))
+                    except ValueError:
+                        rgb = None
 
                     if rgb:
                         profileToUpdate["rgb"]["red"] = rgb[0]
