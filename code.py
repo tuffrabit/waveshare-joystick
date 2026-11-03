@@ -1,5 +1,4 @@
 import board
-import digitalio
 import analogio
 import usb_hid
 import usb_cdc
@@ -14,6 +13,7 @@ from config import Config
 from profileManager import ProfileManager
 from profileHelper import ProfileHelper
 from keyConverter import KeyConverter
+from actionManager import ActionManager
 from serialHelper import SerialHelper
 
 # ActionType: KEY = 1
@@ -31,26 +31,20 @@ config = Config()
 profileManager = ProfileManager()
 profileHelper = ProfileHelper()
 keyConverter = KeyConverter()
+actionManager = ActionManager(keyboard, gp)
 serialHelper = SerialHelper()
 currentProfile = None
 isKeyboardMode = False
-keyboardModeStickUpKey = None
-keyboardModeStickDownKey = None
-keyboardModeStickLeftKey = None
-keyboardModeStickRightKey = None
-stickButton = None
 stickXOrientationAxis = 0
 stickXOrientationReverse = False
 stickYOrientationAxis = 1
 stickYOrientationReverse = True
 
-actionStates = {
-    "stickButton": False,
-    "kbUp": False,
-    "kbDown": False,
-    "kbLeft": False,
-    "kbRight": False
-}
+actionManager.registerControl("stickButton")
+actionManager.registerControl("kbUp")
+actionManager.registerControl("kbDown")
+actionManager.registerControl("kbLeft")
+actionManager.registerControl("kbRight")
 
 # Config
 config.loadFromFile()
@@ -70,11 +64,16 @@ kbMode.setYConeEnd(config.kbModeYConeEnd)
 kbMode.setKeyboard(keyboard)
 led.setExtraLed(board.GP29)
 
-# Create some buttons. The physical buttons are connected
-# to ground on one side and these and these pins on the other.
-joySelectButton = digitalio.DigitalInOut(board.GP28)
-joySelectButton.direction = digitalio.Direction.INPUT
-joySelectButton.pull = digitalio.Pull.UP
+# The stick switch line is weakly coupled to the Y-axis wiper inside the
+# stick module: at full "up" deflection the wiper nears ground and drags the
+# button line low enough to read as a digital press. Measured on device with
+# the pin configured as analog: line idles ~40k, full-up sag ~9.3k-11.7k, a
+# real click < ~500. Read it as an analog threshold instead of digital.
+# GP28 is ADC channel 2 (A2); the hysteresis band also absorbs click bounce.
+STICK_BUTTON_PRESS_THRESHOLD = 3000
+STICK_BUTTON_RELEASE_THRESHOLD = 6000
+joySelectAnalog = analogio.AnalogIn(board.A2)
+stickButtonIsPressed = False
 
 # Connect an analog two-axis joystick to A4 and A5.
 ax = analogio.AnalogIn(board.A0)
@@ -118,53 +117,20 @@ def setRunValuesFromCurrentProfile():
     # Profile specific stuff
     global profileHelper
     global currentProfile
-    global led
     global isKeyboardMode
-    global keyboardModeStickUpKey
-    global keyboardModeStickDownKey
-    global keyboardModeStickLeftKey
-    global keyboardModeStickRightKey
-    global stickButton
+    global actionManager
 
     isKeyboardMode = profileHelper.getIsKbModeEnabled(currentProfile)
-    keyboardModeStickUpKey = profileHelper.getKbModeBinding("up", currentProfile)
-    keyboardModeStickDownKey = profileHelper.getKbModeBinding("down", currentProfile)
-    keyboardModeStickLeftKey = profileHelper.getKbModeBinding("left", currentProfile)
-    keyboardModeStickRightKey = profileHelper.getKbModeBinding("right", currentProfile)
-    stickButton = profileHelper.getJoystickButton(currentProfile)
 
-def handleAction(stateIndex, trigger, action):
-    global goToNextProfile
-    global goToPreviousProfile
-
-    if action is None or action["type"] is None or action["action"] is None:
-        return
-
-    if trigger != actionStates[stateIndex]:
-        actionStates[stateIndex] = trigger
-
-        if action["type"] == 1:
-            if trigger:
-                keyboard.press(action["action"])
-            else:
-                keyboard.release(action["action"])
-        elif action["type"] == 2:
-            if trigger:
-                gp.press_buttons(action["action"])
-            else:
-                gp.release_buttons(action["action"])
-        elif action["type"] == 3:
-            if trigger:
-                if action["action"] == "nextProfile":
-                    goToNextProfile = True
-                elif action["action"] == "previousProfile":
-                    goToPreviousProfile = True
+    actionManager.setBinding("stickButton", profileHelper.getJoystickButton(currentProfile))
+    actionManager.setBinding("kbUp", profileHelper.getKbModeBinding("up", currentProfile))
+    actionManager.setBinding("kbDown", profileHelper.getKbModeBinding("down", currentProfile))
+    actionManager.setBinding("kbLeft", profileHelper.getKbModeBinding("left", currentProfile))
+    actionManager.setBinding("kbRight", profileHelper.getKbModeBinding("right", currentProfile))
 
 setRunValuesFromCurrentProfile()
 resolveStickOrientation()
 
-goToNextProfile = False
-goToPreviousProfile = False
 reloadCurrentProfile = False
 
 doReadStickValues = False
@@ -187,7 +153,14 @@ while True:
         elif "orientationChange" in commandAction and commandAction["orientationChange"]:
             resolveStickOrientation()
 
-    handleAction("stickButton", not joySelectButton.value, stickButton)
+    rawStickButtonValue = joySelectAnalog.value
+
+    if rawStickButtonValue < STICK_BUTTON_PRESS_THRESHOLD:
+        stickButtonIsPressed = True
+    elif rawStickButtonValue > STICK_BUTTON_RELEASE_THRESHOLD:
+        stickButtonIsPressed = False
+
+    actionManager.setPhysicalState("stickButton", stickButtonIsPressed)
     stickValues = stick.doStickCalculations(ax, ay, True)
     tempXValue = stickValues[0]
     tempYValue = stickValues[1]
@@ -214,29 +187,28 @@ while True:
 
     if isKeyboardMode:
         up, down, left, right = kbMode.calculateStickInput(stickValues)
-        handleAction("kbUp", up, keyboardModeStickUpKey)
-        handleAction("kbDown", down, keyboardModeStickDownKey)
-        handleAction("kbLeft", left, keyboardModeStickLeftKey)
-        handleAction("kbRight", right, keyboardModeStickRightKey)
+        actionManager.setPhysicalState("kbUp", up)
+        actionManager.setPhysicalState("kbDown", down)
+        actionManager.setPhysicalState("kbLeft", left)
+        actionManager.setPhysicalState("kbRight", right)
     else:
         gp.move_joysticks(x=stickValues[0], y=stickValues[1])
 
-    if goToNextProfile or goToPreviousProfile:
-        profile = None
+    # Flush aggregated HID once, after all inputs for this iteration.
+    actionManager.applyOutputs()
 
-        if goToNextProfile:
-            profile = profileManager.getNextProfile()
-        elif goToPreviousProfile:
-            profile = profileManager.getPreviousProfile()
+    navigationAction = actionManager.consumeNavigation()
+    profile = None
 
-        goToNextProfile = False
-        goToPreviousProfile = False
+    if navigationAction == "nextProfile":
+        profile = profileManager.getNextProfile()
+    elif navigationAction == "previousProfile":
+        profile = profileManager.getPreviousProfile()
 
-        if profile != None:
-            currentProfile = profile
-            setRunValuesFromCurrentProfile()
-            gp.release_all_buttons()
-            keyboard.release_all()
+    if profile != None:
+        currentProfile = profile
+        setRunValuesFromCurrentProfile()
+        actionManager.neutralizeOutputs()
 
     if reloadCurrentProfile:
         reloadCurrentProfile = False
@@ -244,5 +216,4 @@ while True:
 
         if currentProfile != None:
             setRunValuesFromCurrentProfile()
-            gp.release_all_buttons()
-            keyboard.release_all()
+            actionManager.neutralizeOutputs()
